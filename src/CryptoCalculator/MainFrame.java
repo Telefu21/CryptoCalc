@@ -8,14 +8,14 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.JButton;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
-import java.util.Scanner;
 
 import javax.swing.JTextArea;
 import javax.swing.JTabbedPane;
@@ -36,6 +36,9 @@ import java.awt.event.ItemEvent;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+
+import CryptoCalculator.CRC.Parameters;
+
 import javax.swing.JRadioButton;
 import javax.swing.ButtonGroup;
 
@@ -68,28 +71,37 @@ public class MainFrame extends JFrame {
 	
 	private static final int FORMAT_CONVERSION_SELECT_FILE_OPERATION = 0;
 	private static final int FORMAT_CONVERSION_VIEW_CERT_FILE = 1;
-	private static final int FORMAT_CONVERSION_VIEW_RSA_PRIV_KEY_FILE = 2;
-	private static final int FORMAT_CONVERSION_VIEW_RSA_PUB_KEY_FILE = 3;
-	private static final int FORMAT_CONVERSION_VIEW_PRIV_EC_KEY_FILE = 4;
-	private static final int FORMAT_CONVERSION_VIEW_PUB_EC_KEY_FILE = 5;	
-	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_CERT = 6;
-	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_CERT = 7;
-	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_RSA_PRIV = 8;
-	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_RSA_PRIV = 9;
-	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_RSA_PUB = 10;
-	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_RSA_PUB = 11;
-	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_ECC_PRIV = 12;
-	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_ECC_PRIV = 13;
-	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_ECC_PUB = 14;
-	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_ECC_PUB = 15;
-	private static final int FORMAT_CONVERSION_CONVERT_TEXT_TO_BASE64 = 16;
-	private static final int FORMAT_CONVERSION_CONVERT_BASE64_TO_TEXT = 17;
+	private static final int FORMAT_CONVERSION_VIEW_CRL_FILE = 2;
+	private static final int FORMAT_CONVERSION_VIEW_RSA_PRIV_KEY_FILE = 3;
+	private static final int FORMAT_CONVERSION_VIEW_RSA_PUB_KEY_FILE = 4;
+	private static final int FORMAT_CONVERSION_VIEW_PRIV_EC_KEY_FILE = 5;
+	private static final int FORMAT_CONVERSION_VIEW_PUB_EC_KEY_FILE = 6;	
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_CERT = 7;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_CERT = 8;
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_CRL = 9;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_CRL = 10;
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_RSA_PRIV = 11;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_RSA_PRIV = 12;
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_RSA_PUB = 13;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_RSA_PUB = 14;
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_ECC_PRIV = 15;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_ECC_PRIV = 16;
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_DER_ECC_PUB = 17;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_PEM_ECC_PUB = 18;
+	private static final int FORMAT_CONVERSION_CONVERT_TEXT_TO_BASE64 = 19;
+	private static final int FORMAT_CONVERSION_CONVERT_BASE64_TO_TEXT = 20;
+	private static final int FORMAT_CONVERSION_CONVERT_PEM_TO_ASN1 = 21;
+	private static final int FORMAT_CONVERSION_CONVERT_DER_TO_ASN1 = 22;
+
+	private static final int CRC_PREDEFINED_PARAMS_CRC8 = 0;
+	private static final int CRC_PREDEFINED_PARAMS_CRC16 = 1;
+	private static final int CRC_PREDEFINED_PARAMS_CRC32 = 2;
+	private static final int CRC_PREDEFINED_PARAMS_CRC64 = 3;
 	
 	private String previousTextAreaEncryptOutput = "";
-	private String previousTextAreaHashOutput = "";
 	private String certKeyFile[] = {"", "", ""};
 	
-	private JPanel contentPane;
+	private JPanel mainPane;
 	private JTextField txtEncryptDecryptFileInput = new JTextField();
 	private MainFrame selfInstance;
 	private JTextField txtEncryptDecryptFileOutput = new JTextField();
@@ -228,11 +240,36 @@ public class MainFrame extends JFrame {
 	private boolean FCInputFileSelected = false;
 	private String CertWSPath1BackSlash, CertWSPath2BackSlash, CertWSPath4BackSlash;
 	private JPasswordField passwordFieldMac;
-	private final ButtonGroup buttonGroup = new ButtonGroup();
+	private final ButtonGroup buttonGroupCRC = new ButtonGroup();
+	private final ButtonGroup buttonGroupHash = new ButtonGroup();
 	private final JScrollPane textAreaScrollPaneFC = new JScrollPane();
 	private JTextField txtFCSelectInputFile;
 	private final JComboBox<String> comboFCFileViewFormat = new JComboBox<String>();
 	private final JButton btnFCConvertFile = new JButton("Apply Operation");
+	private JRadioButton rdbtnHash;
+	private JTextField textFieldPrimeNumOFBits;
+	private JTextArea textPrimeNumber;
+	private JButton btnGeneratePrime;
+	private JCheckBox chckboxPrimeHexOutput;
+	private JCheckBox chckboxSafePrime;
+	private final JRadioButton rdbtnCRC64 = new JRadioButton("CRC 64");
+	private final JComboBox<String> comboCRCPredifened = new JComboBox<String>();
+	private final JLabel lblPredefinedParameters = new JLabel("Predefined:");
+	private JTextField textFieldCRCPolynomial = new JTextField();
+	private final JTextArea textCRCOutput = new JTextArea();
+	private final JLabel lblCRCInitValue = new JLabel("Init Value (Hex):");
+	private final JTextField textFieldCRCInit = new JTextField();
+	private final JLabel lblCRCXOR = new JLabel("XOR Value (Hex):");
+	private final JTextField textFieldCRCXorValue = new JTextField();
+	private JTextField textFieldCRCFileInput;
+	private final JTextArea textCRCInput = new JTextArea(); 
+	private final JRadioButton rdbtnCRC8 = new JRadioButton("CRC 8");
+	private final JRadioButton rdbtnCRC16 = new JRadioButton("CRC 16");
+	private final JRadioButton rdbtnCRC32 = new JRadioButton("CRC 32");
+	private final JCheckBox chckbxCRCReflectResult  = new JCheckBox("Reflect Result");
+	private final JCheckBox chckbxCRCReflectInput = new JCheckBox("Reflect Input");
+
+	private boolean isCRCFileInputAssigned = false;
 	
 	/**
 	 * Launch the application.
@@ -263,16 +300,16 @@ public class MainFrame extends JFrame {
 		setTitle("Crypto Calculator");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 901, 732);
-		contentPane = new JPanel();
-		contentPane.setAutoscrolls(true);
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		mainPane = new JPanel();
+		mainPane.setAutoscrolls(true);
+		mainPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
-		setContentPane(contentPane);
-		contentPane.setLayout(null);
+		setContentPane(mainPane);
+		mainPane.setLayout(null);
 		tabbedPane.setAutoscrolls(true);
 		
 		tabbedPane.setBounds(10, 11, 865, 544);
-		contentPane.add(tabbedPane);
+		mainPane.add(tabbedPane);
 		
 		comboKeyGenRsaKeyLength.addItem("1024-bit");
 		comboKeyGenRsaKeyLength.addItem("2048-bit");
@@ -326,24 +363,29 @@ public class MainFrame extends JFrame {
 		
 		comboFCFileViewFormat.addItem("Select File Operation");
 		comboFCFileViewFormat.addItem("View Certificate in Human Readable Form");
+		comboFCFileViewFormat.addItem("View CRL in Human Readable Form");
 		comboFCFileViewFormat.addItem("View RSA Private Key in Human Readable Form");
 		comboFCFileViewFormat.addItem("View RSA Public Key in Human Readable Form");
 		comboFCFileViewFormat.addItem("View ECC Private Key in Human Readable Form");
 		comboFCFileViewFormat.addItem("View ECC Public Key in Human Readable Form");
-		comboFCFileViewFormat.addItem("Convert PEM Type Certificate to DER Type");
-		comboFCFileViewFormat.addItem("Convert DER Type Certificate to PEM Type");
-		comboFCFileViewFormat.addItem("Convert PEM Type RSA Private Key to DER Type");
-		comboFCFileViewFormat.addItem("Convert DER Type RSA Private Key to PEM Type");
-		comboFCFileViewFormat.addItem("Convert PEM Type RSA Public Key to DER Type");
-		comboFCFileViewFormat.addItem("Convert DER Type RSA Public Key to PEM Type");
-		comboFCFileViewFormat.addItem("Convert PEM Type ECC Private Key to DER Type");
-		comboFCFileViewFormat.addItem("Convert DER Type ECC Private Key to PEM Type");
-		comboFCFileViewFormat.addItem("Convert PEM Type ECC Public Key to DER Type");
-		comboFCFileViewFormat.addItem("Convert DER Type ECC Public Key to PEM Type");
-		comboFCFileViewFormat.addItem("Convert TEXT File to BASE64 File");
-		comboFCFileViewFormat.addItem("Convert BASE64 File to TEXT File");
+		comboFCFileViewFormat.addItem("Convert PEM Certificate to DER");
+		comboFCFileViewFormat.addItem("Convert DER Certificate to PEM");
+		comboFCFileViewFormat.addItem("Convert PEM CRL to DER");
+		comboFCFileViewFormat.addItem("Convert DER CRL to PEM");
+		comboFCFileViewFormat.addItem("Convert PEM RSA Private Key to DER");
+		comboFCFileViewFormat.addItem("Convert DER RSA Private Key to PEM");
+		comboFCFileViewFormat.addItem("Convert PEM RSA Public Key to DER");
+		comboFCFileViewFormat.addItem("Convert DER RSA Public Key to PEM");
+		comboFCFileViewFormat.addItem("Convert PEM ECC Private Key to DER");
+		comboFCFileViewFormat.addItem("Convert DER ECC Private Key to PEM");
+		comboFCFileViewFormat.addItem("Convert PEM ECC Public Key to DER");
+		comboFCFileViewFormat.addItem("Convert DER ECC Public Key to PEM");
+		comboFCFileViewFormat.addItem("Convert Text File to Base64 File");
+		comboFCFileViewFormat.addItem("Convert Base64 File to Text File");
+		comboFCFileViewFormat.addItem("ASN.1 Parse PEM File");
+		comboFCFileViewFormat.addItem("ASN.1 Parse DER File");
 		
-		tabbedPane.addTab("Key Generate", null, keyGeneration, null);
+		tabbedPane.addTab("Key Operations", null, keyGeneration, null);
 		keyGeneration.setLayout(null);
 		
 		groupBoxKeyGenRSA.setLayout(null);
@@ -703,15 +745,11 @@ public class MainFrame extends JFrame {
 				
 				txtKeyGenHumanReadable.setText("Human Readable Generated Key File to be displayed here ");
 				txtKeyGenHumanReadable.setEditable(false);
-		
-		JPanel keyDerivation = new JPanel();
-		tabbedPane.addTab("Key Derive", null, keyDerivation, null);
-		keyDerivation.setLayout(null);
 				
 		encrypt.setAutoscrolls(true);
 		
 		tabbedPane.addTab("Encrypt & Decrypt", null, encrypt, null);
-		tabbedPane.setEnabledAt(2, true);
+		tabbedPane.setEnabledAt(1, true);
 		encrypt.setLayout(null);
 		groupBoxEncryptText.setAutoscrolls(true);
 		
@@ -1348,7 +1386,7 @@ public class MainFrame extends JFrame {
 		
 		/* *** add list of Hash Functions to combo box End *** */
 		
-		tabbedPane.addTab("Hash & Mac Generate", null, hashAndMac, null);
+		tabbedPane.addTab("Hash & Mac", null, hashAndMac, null);
 		hashAndMac.setLayout(null);
 		groupBoxHashingParams.setLayout(null);
 		groupBoxHashingParams.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
@@ -1381,21 +1419,6 @@ public class MainFrame extends JFrame {
 		passwordFieldMac.setBounds(405, 60, 166, 20);
 		groupBoxHashingParams.add(passwordFieldMac);
 		
-		JRadioButton rdbtnHash = new JRadioButton("Hashing");
-		rdbtnHash.addMouseListener(new MouseAdapter() 
-		{
-			@Override
-			public void mouseClicked(MouseEvent arg0) 
-			{
-				passwordFieldMac.setEnabled(false);
-				comboEncryptCiphersCmac.setEnabled(false);
-			}
-		});
-		buttonGroup.add(rdbtnHash);
-		rdbtnHash.setBounds(10, 17, 109, 23);
-		groupBoxHashingParams.add(rdbtnHash);
-		rdbtnHash.setSelected(true);
-		
 		JRadioButton rdbtnHmac = new JRadioButton("HMAC Generate");
 		rdbtnHmac.addMouseListener(new MouseAdapter() 
 		{
@@ -1406,8 +1429,8 @@ public class MainFrame extends JFrame {
 				comboEncryptCiphersCmac.setEnabled(false);
 			}
 		});
-		buttonGroup.add(rdbtnHmac);
-		rdbtnHmac.setBounds(139, 17, 143, 23);
+		buttonGroupHash.add(rdbtnHmac);
+		rdbtnHmac.setBounds(129, 17, 142, 23);
 		groupBoxHashingParams.add(rdbtnHmac);
 		
 		JRadioButton rdbtnCmac = new JRadioButton("CMAC Generate");
@@ -1419,8 +1442,8 @@ public class MainFrame extends JFrame {
 				comboEncryptCiphersCmac.setEnabled(true);
 			}
 		});
-		buttonGroup.add(rdbtnCmac);
-		rdbtnCmac.setBounds(296, 17, 131, 23);
+		buttonGroupHash.add(rdbtnCmac);
+		rdbtnCmac.setBounds(313, 17, 131, 23);
 		groupBoxHashingParams.add(rdbtnCmac);
 		
 		txtHashInputFile = new JTextField();
@@ -1437,6 +1460,21 @@ public class MainFrame extends JFrame {
 		groupBoxHashingParams.add(lblHashStatusBox);
 		lblHashStatus.setBounds(10, 171, 46, 14);
 		groupBoxHashingParams.add(lblHashStatus);
+		
+		rdbtnHash = new JRadioButton("Hashing");
+		rdbtnHash.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent arg0) 
+			{
+				passwordFieldMac.setEnabled(false);
+				comboEncryptCiphersCmac.setEnabled(false);
+			}
+		});
+		buttonGroupHash.add(rdbtnHash);
+		rdbtnHash.setBounds(10, 17, 92, 23);
+		groupBoxHashingParams.add(rdbtnHash);
+		rdbtnHash.setSelected(true);
 		
 		btnStartFileHashing.addMouseListener(new MouseAdapter() 
 		{
@@ -2483,11 +2521,35 @@ public class MainFrame extends JFrame {
 				
 				cmdInterpretor.addCommandLineStr("openssl");
 				
-				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_CERT_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_RSA_PRIV_KEY_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_RSA_PUB_KEY_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_PUB_EC_KEY_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_PRIV_EC_KEY_FILE)
+				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_PEM_TO_ASN1 || fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_DER_TO_ASN1)
+				{
+					cmdInterpretor.addCommandLineStr("asn1parse");
+					cmdInterpretor.addCommandLineStr("-in");
+					cmdInterpretor.addCommandLineStr(inputFile);
+					
+					if(fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_DER_TO_ASN1)
+					{
+						cmdInterpretor.addCommandLineStr("-inform");
+						cmdInterpretor.addCommandLineStr("DER");
+					}
+					
+					textAreaFC.setText(cmdInterpretor.runCommand());
+					
+					displayCmdInTextAreaAndClear();
+					
+					return;
+				}
+				
+				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_CERT_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_CRL_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_RSA_PRIV_KEY_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_RSA_PUB_KEY_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_PUB_EC_KEY_FILE || fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_PRIV_EC_KEY_FILE)
 				{					
 					if(fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_CERT_FILE)
 					{
 						cmdInterpretor.addCommandLineStr("x509");
+					}
+					
+					if(fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_CRL_FILE)
+					{
+						cmdInterpretor.addCommandLineStr("crl");
 					}
 					
 					if(fileFormatComboBoxIndex == FORMAT_CONVERSION_VIEW_RSA_PRIV_KEY_FILE)
@@ -2528,7 +2590,7 @@ public class MainFrame extends JFrame {
 								
 				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_PEM_TO_DER_CERT)
 				{
-					cmdInterpretor.addCommandLineStr("x590");
+					cmdInterpretor.addCommandLineStr("x509");
 					cmdInterpretor.addCommandLineStr("-outform");
 					cmdInterpretor.addCommandLineStr("der");
 					outputFile += ".der" + "\"";
@@ -2537,7 +2599,24 @@ public class MainFrame extends JFrame {
 
 				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_DER_TO_PEM_CERT)
 				{
-					cmdInterpretor.addCommandLineStr("x590");
+					cmdInterpretor.addCommandLineStr("x509");
+					cmdInterpretor.addCommandLineStr("-inform");
+					cmdInterpretor.addCommandLineStr("der");
+					outputFile += ".pem" + "\"";
+				}
+				
+				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_PEM_TO_DER_CRL)
+				{
+					cmdInterpretor.addCommandLineStr("crl");
+					cmdInterpretor.addCommandLineStr("-outform");
+					cmdInterpretor.addCommandLineStr("der");
+					outputFile += ".der" + "\"";
+					viewHexStr = true;
+				}
+
+				if(fileFormatComboBoxIndex == FORMAT_CONVERSION_CONVERT_DER_TO_PEM_CRL)
+				{
+					cmdInterpretor.addCommandLineStr("crl");
 					cmdInterpretor.addCommandLineStr("-inform");
 					cmdInterpretor.addCommandLineStr("der");
 					outputFile += ".pem" + "\"";
@@ -2669,7 +2748,7 @@ public class MainFrame extends JFrame {
 						
 						while((ch = reader.read())!=-1)
 						{	
-							hexString.append("0x" + Integer.toHexString(ch) + " ");
+							hexString.append("0x" + Integer.toHexString((Integer)ch) + " ");
 							
 							if( cntr % 16 == 0)
 								hexString.append("\n");
@@ -2693,6 +2772,483 @@ public class MainFrame extends JFrame {
 		
 		formatConversion.add(btnFCConvertFile);
 		
+		JPanel crcNumbers = new JPanel();
+		tabbedPane.addTab("CRC&Numbers", null, crcNumbers, null);
+		crcNumbers.setLayout(null);
+		
+		JPanel groupBoxPrimeNumberGenerate = new JPanel();
+		groupBoxPrimeNumberGenerate.setLayout(null);
+		groupBoxPrimeNumberGenerate.setToolTipText("Output of Encryption");
+		groupBoxPrimeNumberGenerate.setName("");
+		groupBoxPrimeNumberGenerate.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		groupBoxPrimeNumberGenerate.setBounds(10, 11, 840, 152);
+		crcNumbers.add(groupBoxPrimeNumberGenerate);
+		
+		btnGeneratePrime = new JButton("Generate Prime Number");
+		btnGeneratePrime.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				cmdInterpretor.addCommandLineStr("openssl"); 
+				cmdInterpretor.addCommandLineStr("prime");
+				cmdInterpretor.addCommandLineStr("-generate");
+				cmdInterpretor.addCommandLineStr("-bits");
+				cmdInterpretor.addCommandLineStr(textFieldPrimeNumOFBits.getText());
+				
+				if(chckboxPrimeHexOutput.isSelected())
+				{
+					cmdInterpretor.addCommandLineStr("-hex");
+				}
+				
+				if(chckboxSafePrime.isSelected())
+				{
+					cmdInterpretor.addCommandLineStr("-safe");
+					textPrimeNumber.setText(textPrimeNumber.getText() + "Save Mode ON: Generated number minus 1 divided by 2 is also prime \n");
+				}
+				
+				textPrimeNumber.setText(textPrimeNumber.getText() + cmdInterpretor.runCommand());
+				
+				displayCmdInTextAreaAndClear();
+			}
+		});
+		
+		btnGeneratePrime.setBounds(329, 123, 184, 23);
+		groupBoxPrimeNumberGenerate.add(btnGeneratePrime);
+		
+		chckboxPrimeHexOutput = new JCheckBox("Hex Output");
+		chckboxPrimeHexOutput.setBounds(388, 2, 92, 23);
+		groupBoxPrimeNumberGenerate.add(chckboxPrimeHexOutput);
+		
+		chckboxSafePrime = new JCheckBox("Safe Prime");
+		chckboxSafePrime.setBounds(262, 2, 92, 23);
+		groupBoxPrimeNumberGenerate.add(chckboxSafePrime);
+		
+		textFieldPrimeNumOFBits = new JTextField();
+		textFieldPrimeNumOFBits.setBounds(137, 6, 96, 20);
+		groupBoxPrimeNumberGenerate.add(textFieldPrimeNumOFBits);
+		textFieldPrimeNumOFBits.setColumns(10);
+		
+		JLabel lblNewLabel = new JLabel("Number of Bits:");
+		lblNewLabel.setBounds(10, 6, 107, 14);
+		groupBoxPrimeNumberGenerate.add(lblNewLabel);
+		
+		JScrollPane scrollPane_6 = new JScrollPane();
+		scrollPane_6.setBounds(10, 32, 820, 84);
+		groupBoxPrimeNumberGenerate.add(scrollPane_6);
+		
+		textPrimeNumber = new JTextArea();
+		scrollPane_6.setViewportView(textPrimeNumber);
+		
+		JPanel groupBoxPrimeNumberGenerate_1 = new JPanel();
+		groupBoxPrimeNumberGenerate_1.setLayout(null);
+		groupBoxPrimeNumberGenerate_1.setToolTipText("Output of Encryption");
+		groupBoxPrimeNumberGenerate_1.setName("");
+		groupBoxPrimeNumberGenerate_1.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		groupBoxPrimeNumberGenerate_1.setBounds(10, 174, 840, 331);
+		crcNumbers.add(groupBoxPrimeNumberGenerate_1);
+		
+		Parameters [][] CrcPredefinedParams = new Parameters[4][24];
+		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][0] 	= CRC.Parameters.CRC8_IEEE;		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][1] 	= CRC.Parameters.CRC8_SAE_J1850;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][2] 	= CRC.Parameters.CRC8_SAE_J1850_ZERO;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][3] 	= CRC.Parameters.CRC8_8H2F;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][4] 	= CRC.Parameters.CRC8_CDMA2000;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][5] 	= CRC.Parameters.CRC8_DARC;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][6] 	= CRC.Parameters.CRC8_DVB_S2;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][7] 	= CRC.Parameters.CRC8_EBU;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][8] 	= CRC.Parameters.CRC8_ICODE;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][9] 	= CRC.Parameters.CRC8_ITU;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][10] = CRC.Parameters.CRC8_MAXIM;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][11] = CRC.Parameters.CRC8_ROHC;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC8][12] = CRC.Parameters.CRC8_WCDMA;
+		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][0]	 = CRC.Parameters.CRC16_CCITT_ZERO;		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][1]	 = CRC.Parameters.CRC16_ARC;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][2]	 = CRC.Parameters.CRC16_AUG_CCITT;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][3]	 = CRC.Parameters.CRC16_BUYPASS;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][4]	 = CRC.Parameters.CRC16_CCITT_FALSE;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][5]	 = CRC.Parameters.CRC16_CDMA2000;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][6]	 = CRC.Parameters.CRC16_DDS_110;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][7]	 = CRC.Parameters.CRC16_DECT_R;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][8]	 = CRC.Parameters.CRC16_DECT_X;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][9]  = CRC.Parameters.CRC16_DNP;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][10] = CRC.Parameters.CRC16_EN_13757;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][11] = CRC.Parameters.CRC16_GENIBUS;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][12] = CRC.Parameters.CRC16_MAXIM;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][13] = CRC.Parameters.CRC16_MCRF4XX;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][14] = CRC.Parameters.CRC16_RIELLO;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][15] = CRC.Parameters.CRC16_T10_DIF;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][16] = CRC.Parameters.CRC16_TELEDISK;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][17] = CRC.Parameters.CRC16_TMS37157;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][18] = CRC.Parameters.CRC16_USB;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][19] = CRC.Parameters.CRC16_A;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][20] = CRC.Parameters.CRC16_KERMIT;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][21] = CRC.Parameters.CRC16_MODBUS;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][22] = CRC.Parameters.CRC16_X_25;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC16][23] = CRC.Parameters.CRC16_XMODEM;
+		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][0]	 = CRC.Parameters.CRC32_CRC32;		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][1]	 = CRC.Parameters.CRC32_BZIP2;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][2]	 = CRC.Parameters.CRC32_C;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][3]	 = CRC.Parameters.CRC32_D;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][4]	 = CRC.Parameters.CRC32_MPEG2;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][5]	 = CRC.Parameters.CRC32_POSIX;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][6]	 = CRC.Parameters.CRC32_Q;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][7]	 = CRC.Parameters.CRC32_JAMCRC;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC32][8]	 = CRC.Parameters.CRC32_XFER;
+		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC64][0]	 = CRC.Parameters.CRC64_ECMA_182;		
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC64][1]	 = CRC.Parameters.CRC64_GO_ISO;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC64][2]	 = CRC.Parameters.CRC64_WE;
+		CrcPredefinedParams[CRC_PREDEFINED_PARAMS_CRC64][3]	 = CRC.Parameters.CRC64_XZ;
+		
+		JButton btnGenerateCRC = new JButton("Generate CRC");
+		btnGenerateCRC.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				int 			width = 8;   
+				long 			polynomial; 
+				boolean 		reflectIn;   
+				boolean 		reflectOut;   
+				long 			init; 
+				long 			finalXor; 
+				byte [] 		fileBytes = null;
+				StringBuilder 	fileString = new StringBuilder("");
+				
+				if(isCRCFileInputAssigned == true)
+				{
+					try 
+					{
+						FileReader CRCInputFileReader = new FileReader((new File(textFieldCRCFileInput.getText())));
+						int ch;
+						
+						while((ch = CRCInputFileReader.read())!=-1)
+						{	
+							fileString.append(Character.toString(ch));
+						}
+						
+						fileBytes = fileString.toString().getBytes();
+						
+						CRCInputFileReader.close();
+					} 
+					catch (FileNotFoundException e1) 
+					{
+						e1.printStackTrace();
+					} 
+					catch (IOException e1) 
+					{
+						e1.printStackTrace();
+					}
+				}
+				
+				if(rdbtnCRC8.isSelected())
+				{
+					width = 8;
+				}
+				
+				if(rdbtnCRC16.isSelected())
+				{
+					width = 16;
+				}
+				
+				if(rdbtnCRC32.isSelected())
+				{
+					width = 32;
+				}
+				
+				if(rdbtnCRC64.isSelected())
+				{
+					width = 64;
+				}
+				
+				polynomial = (new BigInteger(textFieldCRCPolynomial.getText().replaceAll("0x", ""), 16)).longValue();
+				finalXor = (new BigInteger(textFieldCRCXorValue.getText().replaceAll("0x", ""), 16)).longValue();
+				init = (new BigInteger(textFieldCRCInit.getText().replaceAll("0x", ""), 16)).longValue(); 
+				
+				reflectIn = chckbxCRCReflectInput.isSelected();
+				reflectOut = chckbxCRCReflectResult.isSelected();
+				
+				Parameters params = new Parameters(width , polynomial, init, reflectIn, reflectOut, finalXor);
+				
+				CRC crc = new CRC(params);
+				
+				long [] crcTable = crc.getCrcTable();
+				
+				if (textCRCInput.getText().length() != 0)
+				{
+					textCRCOutput.setText("CRC Text Result:  " + "0x" + Long.toHexString( CRC.calculateCRC(params, textCRCInput.getText().getBytes())).toUpperCase() + "\n\n" );
+				}
+				
+				if (fileBytes != null)
+				{
+					textCRCOutput.setText(textCRCOutput.getText() + "CRC File Result:  " + "0x" + Long.toHexString( CRC.calculateCRC(params, fileBytes)).toUpperCase() + "\n\n" );
+				}
+				
+				textCRCOutput.setText(textCRCOutput.getText() + "CRC Table:\n");
+						
+				for(int i = 0; i < crcTable.length; i++)
+				{
+					textCRCOutput.setText(textCRCOutput.getText() + "0x" + Long.toHexString(crcTable[i]).toUpperCase() + " ");
+					
+					if((i + 1) %8 == 0)
+					{
+						textCRCOutput.setText(textCRCOutput.getText() + "\n");
+					}
+				}
+			}
+		});
+		
+		comboCRCPredifened.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				int comboIndex = comboCRCPredifened.getSelectedIndex();
+				int crcSizeIndex = 0; 
+				
+				if(comboIndex < 0)
+				{
+					comboIndex = 0;
+				}
+					
+				if(rdbtnCRC8.isSelected())
+				{
+					crcSizeIndex = CRC_PREDEFINED_PARAMS_CRC8;
+				}
+				
+				if(rdbtnCRC16.isSelected())
+				{
+					crcSizeIndex = CRC_PREDEFINED_PARAMS_CRC16;
+				}
+				
+				if(rdbtnCRC32.isSelected())
+				{
+					crcSizeIndex = CRC_PREDEFINED_PARAMS_CRC32;
+				}
+				
+				if(rdbtnCRC64.isSelected())
+				{
+					crcSizeIndex = CRC_PREDEFINED_PARAMS_CRC64;
+				}
+				
+				String polynomial = "0x" + Long.toHexString(CrcPredefinedParams[crcSizeIndex][comboIndex].getPolynomial()).toUpperCase();
+				String init = "0x" + Long.toHexString(CrcPredefinedParams[crcSizeIndex][comboIndex].getInit()).toUpperCase();
+				String finalXorValue = "0x" + Long.toHexString(CrcPredefinedParams[crcSizeIndex][comboIndex].getFinalXor()).toUpperCase();
+				
+				if(crcSizeIndex == CRC_PREDEFINED_PARAMS_CRC32)
+				{
+					polynomial = polynomial.replaceAll("0xFFFFFFFF", "0x");
+					init = init.replaceAll("0xFFFFFFFF", "0x");
+					finalXorValue = finalXorValue.replaceAll("0xFFFFFFFF", "0x");
+				}
+				
+				textFieldCRCPolynomial.setText(polynomial);
+				textFieldCRCInit.setText(init);
+				textFieldCRCXorValue.setText(finalXorValue);
+				
+				chckbxCRCReflectInput.setSelected(CrcPredefinedParams[crcSizeIndex][comboIndex].isReflectIn());
+				chckbxCRCReflectResult.setSelected(CrcPredefinedParams[crcSizeIndex][comboIndex].isReflectOut());
+			}
+		});
+		
+		comboCRCPredifened.addItem("CRC 8");
+		comboCRCPredifened.addItem("SAE J1850");
+		comboCRCPredifened.addItem("SAE J1850 ZERO");
+		comboCRCPredifened.addItem("8H2F");
+		comboCRCPredifened.addItem("CDMA2000");
+		comboCRCPredifened.addItem("DARC");
+		comboCRCPredifened.addItem("DVB S2");
+		comboCRCPredifened.addItem("EBU");
+		comboCRCPredifened.addItem("ICODE");
+		comboCRCPredifened.addItem("ITU");
+		comboCRCPredifened.addItem("MAXIM");
+		comboCRCPredifened.addItem("ROHC");
+		comboCRCPredifened.addItem("WCDMA");
+		
+		btnGenerateCRC.setBounds(321, 153, 184, 29);
+		groupBoxPrimeNumberGenerate_1.add(btnGenerateCRC);
+
+		rdbtnCRC8.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				comboCRCPredifened.removeAllItems();
+				
+				comboCRCPredifened.addItem("CRC 8");
+				comboCRCPredifened.addItem("SAE J1850");
+				comboCRCPredifened.addItem("SAE J1850 ZERO");
+				comboCRCPredifened.addItem("8H2F");
+				comboCRCPredifened.addItem("CDMA2000");
+				comboCRCPredifened.addItem("DARC");
+				comboCRCPredifened.addItem("DVB S2");
+				comboCRCPredifened.addItem("EBU");
+				comboCRCPredifened.addItem("ICODE");
+				comboCRCPredifened.addItem("ITU");
+				comboCRCPredifened.addItem("MAXIM");
+				comboCRCPredifened.addItem("ROHC");
+				comboCRCPredifened.addItem("WCDMA");
+			}
+		});
+		buttonGroupCRC.add(rdbtnCRC8);
+		rdbtnCRC8.setSelected(true);
+		rdbtnCRC8.setBounds(10, 7, 64, 23);
+		groupBoxPrimeNumberGenerate_1.add(rdbtnCRC8);
+		
+		rdbtnCRC16.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				comboCRCPredifened.removeAllItems();
+				
+				comboCRCPredifened.addItem("CCITT ZERO");
+				comboCRCPredifened.addItem("ARC");
+				comboCRCPredifened.addItem("AUG CCITT");
+				comboCRCPredifened.addItem("BUYPASS");
+				comboCRCPredifened.addItem("CCITT FALSE");
+				comboCRCPredifened.addItem("CDMA2000");
+				comboCRCPredifened.addItem("DDS 110");
+				comboCRCPredifened.addItem("DECT R");
+				comboCRCPredifened.addItem("DECT X");
+				comboCRCPredifened.addItem("DNP");
+				comboCRCPredifened.addItem("EN13757");
+				comboCRCPredifened.addItem("GENIBUS");
+				comboCRCPredifened.addItem("MAXIM");
+				comboCRCPredifened.addItem("MCRF4XX");
+				comboCRCPredifened.addItem("RIELLO");
+				comboCRCPredifened.addItem("T10 DIF");
+				comboCRCPredifened.addItem("TELEDISK");
+				comboCRCPredifened.addItem("TMS37157");
+				comboCRCPredifened.addItem("USB");
+				comboCRCPredifened.addItem("A");
+				comboCRCPredifened.addItem("KERMIT");
+				comboCRCPredifened.addItem("MODBUS");
+				comboCRCPredifened.addItem("X 25");
+				comboCRCPredifened.addItem("X MODEM");
+			}
+		});
+		buttonGroupCRC.add(rdbtnCRC16);
+		rdbtnCRC16.setBounds(90, 7, 74, 23);
+		groupBoxPrimeNumberGenerate_1.add(rdbtnCRC16);
+		
+		rdbtnCRC32.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				comboCRCPredifened.removeAllItems();
+				
+				comboCRCPredifened.addItem("CRC32 IEEE");
+				comboCRCPredifened.addItem("BZIP2");
+				comboCRCPredifened.addItem("C");
+				comboCRCPredifened.addItem("D");
+				comboCRCPredifened.addItem("MPEG2");
+				comboCRCPredifened.addItem("POSIX");
+				comboCRCPredifened.addItem("Q");
+				comboCRCPredifened.addItem("JAMCRC");
+				comboCRCPredifened.addItem("XFER");
+			}
+		});
+		buttonGroupCRC.add(rdbtnCRC32);
+		rdbtnCRC32.setBounds(181, 7, 84, 23);
+		groupBoxPrimeNumberGenerate_1.add(rdbtnCRC32);
+		buttonGroupCRC.add(rdbtnCRC64);
+		rdbtnCRC64.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				comboCRCPredifened.removeAllItems();
+				
+				comboCRCPredifened.addItem("ECMA 182");
+				comboCRCPredifened.addItem("GO ISO");
+				comboCRCPredifened.addItem("WE");
+				comboCRCPredifened.addItem("XZ");
+			}
+		});
+		rdbtnCRC64.setBounds(267, 7, 74, 23);
+		
+		groupBoxPrimeNumberGenerate_1.add(rdbtnCRC64);
+		comboCRCPredifened.setBounds(441, 7, 104, 22);
+		
+		groupBoxPrimeNumberGenerate_1.add(comboCRCPredifened);
+		lblPredefinedParameters.setBounds(347, 12, 84, 14);
+		
+		groupBoxPrimeNumberGenerate_1.add(lblPredefinedParameters);
+		
+		chckbxCRCReflectInput.setBounds(589, 7, 104, 23);
+		groupBoxPrimeNumberGenerate_1.add(chckbxCRCReflectInput);
+		
+		chckbxCRCReflectResult.setBounds(716, 7, 112, 23);
+		groupBoxPrimeNumberGenerate_1.add(chckbxCRCReflectResult);
+		
+		JLabel lblCRCPolynomial = new JLabel("Polynomial (Hex):");
+		lblCRCPolynomial.setBounds(10, 40, 112, 14);
+		groupBoxPrimeNumberGenerate_1.add(lblCRCPolynomial);
+
+		textFieldCRCPolynomial.setColumns(10);
+		textFieldCRCPolynomial.setBounds(118, 37, 147, 20);
+		groupBoxPrimeNumberGenerate_1.add(textFieldCRCPolynomial);
+		
+		JScrollPane scrollPane_8 = new JScrollPane();
+		scrollPane_8.setBounds(10, 189, 820, 131);
+		groupBoxPrimeNumberGenerate_1.add(scrollPane_8);
+		scrollPane_8.setViewportView(textCRCOutput);
+		lblCRCInitValue.setBounds(10, 68, 112, 14);
+		
+		groupBoxPrimeNumberGenerate_1.add(lblCRCInitValue);
+		textFieldCRCInit.setColumns(10);
+		textFieldCRCInit.setBounds(118, 65, 147, 20);
+		
+		groupBoxPrimeNumberGenerate_1.add(textFieldCRCInit);
+		lblCRCXOR.setBounds(10, 96, 112, 14);
+		
+		groupBoxPrimeNumberGenerate_1.add(lblCRCXOR);
+		textFieldCRCXorValue.setColumns(10);
+		textFieldCRCXorValue.setBounds(118, 93, 147, 20);
+		
+		groupBoxPrimeNumberGenerate_1.add(textFieldCRCXorValue);
+		
+		JButton btnBrowseCRCFile = new JButton("Browse");
+		btnBrowseCRCFile.addMouseListener(new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked(MouseEvent e) 
+			{
+				JFileChooser fileChooser = new JFileChooser();
+				
+				if(fileChooser.showOpenDialog(selfInstance) == JFileChooser.APPROVE_OPTION)
+				{
+					isCRCFileInputAssigned = true;
+					
+					textFieldCRCFileInput.setText(fileChooser.getSelectedFile().getPath());
+				}
+			}
+		});
+		btnBrowseCRCFile.setBounds(750, 121, 80, 23);
+		groupBoxPrimeNumberGenerate_1.add(btnBrowseCRCFile);
+		
+		textFieldCRCFileInput = new JTextField();
+		textFieldCRCFileInput.setText("Select the file to  generate CRC");
+		textFieldCRCFileInput.setEditable(false);
+		textFieldCRCFileInput.setColumns(10);
+		textFieldCRCFileInput.setBounds(10, 122, 730, 20);
+		groupBoxPrimeNumberGenerate_1.add(textFieldCRCFileInput);
+		
+		JScrollPane scrollPane_7 = new JScrollPane();
+		scrollPane_7.setBounds(277, 35, 551, 78);
+		groupBoxPrimeNumberGenerate_1.add(scrollPane_7);
+		
+		scrollPane_7.setViewportView(textCRCInput);
+		
+		JLabel lblCRCResult = new JLabel("CRC Result and CRC Table:");
+		lblCRCResult.setBounds(10, 172, 194, 14);
+		groupBoxPrimeNumberGenerate_1.add(lblCRCResult);
+		
 		comboBoxCertKeyMethodRoot.addItem("RSA 1024");
 		comboBoxCertKeyMethodRoot.addItem("RSA 2048");
 		comboBoxCertKeyMethodRoot.addItem("RSA 4096");
@@ -2712,8 +3268,9 @@ public class MainFrame extends JFrame {
 		comboBoxCertKeyMethodEndEntity.addItem("File Selected");
 		scrollPaneOpenSslCmd.setBounds(10, 563, 865, 97);
 		
-		contentPane.add(scrollPaneOpenSslCmd);
-		btnClearCmdTextArea.addMouseListener(new MouseAdapter() {
+		mainPane.add(scrollPaneOpenSslCmd);
+		btnClearCmdTextArea.addMouseListener(new MouseAdapter() 
+		{
 			@Override
 			public void mouseClicked(MouseEvent arg0) 
 			{
@@ -2721,9 +3278,9 @@ public class MainFrame extends JFrame {
 			}
 		});
 		
-		btnClearCmdTextArea.setBounds(10, 660, 865, 20);
+		btnClearCmdTextArea.setBounds(10, 664, 865, 20);
 		
-		contentPane.add(btnClearCmdTextArea);
+		mainPane.add(btnClearCmdTextArea);
 		
 		/* *** add list of Elliptic Curve Names to combo box Start *** */
 		
